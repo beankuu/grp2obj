@@ -16,10 +16,41 @@ import argparse
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Optional, Set
 
 from exporter import OBJExporter
 from grp_converter import GRPResourceParser
 from paths import resolve_dumpgrp_from_config, resolve_oodle_from_config
+
+
+def _parse_mesh_types(raw: str) -> Set[str]:
+    toks = {t.strip().lower() for t in raw.split(",") if t.strip()}
+    if not toks:
+        return {"dynmodel"}
+    if "all" in toks:
+        return {"all"}
+    allowed = {"rendinst", "dynmodel", "skeleton", "collision", "phobj", "generic"}
+    bad = sorted(t for t in toks if t not in allowed)
+    if bad:
+        raise ValueError(f"Unknown --mesh-types values: {', '.join(bad)}")
+    return toks
+
+
+def _parse_lods(raw: str) -> Optional[Set[int]]:
+    txt = raw.strip().lower()
+    if txt == "all":
+        return None
+    out: Set[int] = set()
+    for part in txt.split(","):
+        p = part.strip()
+        if not p:
+            continue
+        if not p.isdigit():
+            raise ValueError(f"Invalid LOD value: {p}")
+        out.add(int(p))
+    if not out:
+        return {0}
+    return out
 
 
 def main() -> None:
@@ -29,11 +60,36 @@ def main() -> None:
     ap.add_argument("--verbose", "-v", action="store_true")
     ap.add_argument("--split-variants", action="store_true")
     ap.add_argument(
+        "--split-collections",
+        action="store_true",
+        help="Alias of --split-variants. Export one OBJ per collection/variant key.",
+    )
+    ap.add_argument(
         "--compare-file-specific",
         action="store_true",
         help="Enable deprecated filename-gated decoders for parity comparison.",
     )
+    ap.add_argument(
+        "--mesh-types",
+        default="dynmodel",
+        help=(
+            "Comma-separated mesh categories to export: "
+            "rendinst,dynmodel,skeleton,collision,phobj,generic,all "
+            "(default: dynmodel)"
+        ),
+    )
+    ap.add_argument(
+        "--lods",
+        default="0",
+        help="Comma-separated LOD indices for rendinst/dynmodel (e.g. 0,1,2) or 'all' (default: 0)",
+    )
     args = ap.parse_args()
+
+    try:
+        mesh_types = _parse_mesh_types(args.mesh_types)
+        lods = _parse_lods(args.lods)
+    except ValueError as exc:
+        raise SystemExit(f"Error: {exc}")
 
     grp_path = Path(args.grp_file).resolve()
     if not grp_path.exists():
@@ -70,20 +126,26 @@ def main() -> None:
             verbose=args.verbose,
             oodle_dll=oodle_dll_path,
             comparison_mode=args.compare_file_specific,
+            include_mesh_types=mesh_types,
+            include_lods=lods,
         )
         meshes = parser.parse_directory(extract_dir)
 
     if not meshes:
         print(f"[{grp_path.stem}] no meshes decoded.")
+        chosen_types = ",".join(sorted(parser.include_mesh_types))
+        chosen_lods = "all" if parser.include_lods is None else ",".join(str(x) for x in sorted(parser.include_lods))
+        print(f"  active filters: mesh-types={chosen_types} lods={chosen_lods}")
+        print("  hint: try --mesh-types all --lods all or --mesh-types rendinst --lods 0")
         for r in parser.rejections[:20]:
             print(f"  - {r}")
         raise SystemExit(1)
 
-    if args.split_variants:
+    if args.split_variants or args.split_collections:
         target_dir = output_dir / grp_path.stem
         target_dir.mkdir(parents=True, exist_ok=True)
-        OBJExporter.export_split_variants(meshes, target_dir)
-        print(f"[{grp_path.stem}] {len(meshes)} variants -> {target_dir}")
+        out_files = OBJExporter.export_split_variants(meshes, target_dir)
+        print(f"[{grp_path.stem}] {len(out_files)} collections -> {target_dir}")
     else:
         OBJExporter.export(meshes, output_dir, grp_path.stem)
         print(f"[{grp_path.stem}] {len(meshes)} meshes -> {output_dir / (grp_path.stem + '.obj')}")
