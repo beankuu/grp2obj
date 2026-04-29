@@ -1,16 +1,4 @@
 {
-  "datamine": "D:\\War-Thunder-Datamine",
-  "client": "E:\\SteamLibrary\\steamapps\\common\\War Thunder",
-  "clientModels": {
-    "aircrafts": "E:\\SteamLibrary\\steamapps\\common\\War Thunder\\content\\base\\res\\aircrafts",
-    "tanks": "E:\\SteamLibrary\\steamapps\\common\\War Thunder\\content\\base\\res\\tanks",
-    "ships": "E:\\SteamLibrary\\steamapps\\common\\War Thunder\\content\\base\\res\\ships"
-  },
-  "userSkins": "E:\\SteamLibrary\\steamapps\\common\\War Thunder\\UserSkins",
-  "oo2core": ".\\lib\\oo2core_9_win64.dll",
-  "cdk": "E:\\WarThunderDev\\WarThunderCDK",
-  "dag4blend": ".\\lib\\dag4blend",
-  "dumpGrp": ".\\lib\\tools\\dagor_cdk\\windows-x86_64\\dumpGrp-dev.exe",
-  "grp2obj": ".\\grp_converter\\grp2obj.bat",
-  "blender": "C:\\Program Files\\Blender Foundation\\Blender 5.0\\blender.exe"
+  "oodle": ".\\lib\\ooz-wasm-decompress.mjs",
+  "dumpGrp": ".\\lib\\tools\\dagor_cdk\\windows-x86_64\\dumpGrp-dev.exe"
 }

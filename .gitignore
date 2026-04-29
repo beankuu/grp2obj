@@ -1,11 +1,11 @@
 scratch/
 test_example/
-_*
+lib/tools/
 
 .agents
 skills-lock.json
 
-
+node_modules/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -23,7 +23,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/

@@ -5,7 +5,7 @@ This version is intentionally strict: it rejects invalid geometry instead of
 emitting corrupted OBJ files.
 
 Module structure:
-  oodle.py                  — OodleDecompressor (ctypes wrapper for oo2core DLL)
+    oodle.py                  — OodleDecompressor (ooz-backed decompression wrapper)
   decoders/mesh_utils.py    — MeshBuilderMixin (geometry helpers, _build_*)
   decoders/collision.py     — CollisionDecoderMixin (ACE50000, cls boxes, ...)
   decoders/skeleton.py      — SkeletonDecoderMixin (GeomNodeTree, phobj)

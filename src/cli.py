@@ -73,6 +73,11 @@ def main() -> None:
         help="Alias of --split-variants. Export one OBJ per collection/variant key.",
     )
     ap.add_argument(
+        "--no-split-collections",
+        action="store_true",
+        help="Disable default split-by-collection export and write a single combined OBJ.",
+    )
+    ap.add_argument(
         "--compare-file-specific",
         action="store_true",
         help="Enable deprecated file-specific decoders for comparison testing only. "
@@ -133,7 +138,9 @@ def main() -> None:
             print(f"  - ... ({len(parser.rejections) - 20} more)")
         raise SystemExit(1)
 
-    if args.split_variants or args.split_collections:
+    split_collections = (not args.no_split_collections) or args.split_variants or args.split_collections
+
+    if split_collections:
         out_files = OBJExporter.export_split_variants(meshes, output_dir)
         print(f"Exported {len(out_files)} collection OBJ files:")
         for p in out_files:

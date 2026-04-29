@@ -3,11 +3,9 @@
 ## Layout
 
 - Root contains entrypoints only:
-  - `main.py`
-  - `grp_converter.py`
-  - `*.bat`, `*.sh`
+  - `extract_grp.py`
   - top-level docs/config/data files
-- Python implementation files live under `src/core/`.
+- Python implementation files live under `src/`.
 - Imported external reference assets live under `reference/wt_skinmodder/`.
 - Temporary throwaway scripts live under `scratch/`.
 
@@ -15,7 +13,7 @@
 
 - Implementation modules must not assume they run from repository root.
 - Config and library path lookup should resolve from project root discovery, not from current working directory only.
-- New tools should be added under `src/core/` first, then optional root wrapper if CLI entrypoint is needed.
+- New tools should be added under `src/` first.
 - Every extraction run must produce markdown report with structure notes and unknown/uncertain parts.
 - Preferred extraction command: `python extract_grp.py <input.grp> ...`.
 

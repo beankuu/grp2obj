@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract a GRP, decode meshes, and write a single flat OBJ.
+"""Extract a GRP, decode meshes, and export OBJ output.
 
 Output layout:
   <root>/test_example/output/<stem>.obj
@@ -7,9 +7,6 @@ Output layout:
 The dumpGrp temp extraction is performed in a TemporaryDirectory and
 discarded after parsing. Raw class-id files (.B4B7D9C4, .03FB59C4, ...),
 companion `.land/` directories, and texture archives are not retained.
-
-Textures are not extracted here. Use `extract_all_textures.py` to populate
-the project-root `<root>/texture/` pool once.
 """
 
 import argparse
@@ -20,7 +17,25 @@ from typing import Optional, Set
 
 from exporter import OBJExporter
 from grp_converter import GRPResourceParser
-from paths import resolve_dumpgrp_from_config, resolve_oodle_from_config
+from paths import project_root, resolve_dumpgrp_from_config, resolve_oodle_from_config
+
+
+TOOLS_PREBUILD_URL = "https://github.com/GaijinEntertainment/DagorEngine/releases"
+
+
+def _print_missing_tools_hint(dumpgrp_path: Optional[Path] = None) -> None:
+    root = project_root()
+    lib_tools_dir = root / "lib" / "tools"
+    expected_dumpgrp = root / "lib" / "tools" / "dagor_cdk" / "windows-x86_64" / "dumpGrp-dev.exe"
+
+    print("[setup] Missing Dagor extraction tools.")
+    if dumpgrp_path is not None:
+        print(f"[setup] Configured dumpGrp path not found: {dumpgrp_path}")
+    print(f"[setup] Expected tools directory: {lib_tools_dir}")
+    print(f"[setup] Expected dumpGrp path:   {expected_dumpgrp}")
+    print(f"[setup] Download tools-prebuild.windows-x86_64.7z from: {TOOLS_PREBUILD_URL}")
+    print(f"[setup] Unzip it into: {root / 'lib'}")
+    print("[setup] Result should include: lib/tools/dagor_cdk/windows-x86_64/dumpGrp-dev.exe")
 
 
 def _parse_mesh_types(raw: str) -> Set[str]:
@@ -65,6 +80,11 @@ def main() -> None:
         help="Alias of --split-variants. Export one OBJ per collection/variant key.",
     )
     ap.add_argument(
+        "--no-split-collections",
+        action="store_true",
+        help="Disable default split-by-collection export and write a single combined OBJ.",
+    )
+    ap.add_argument(
         "--compare-file-specific",
         action="store_true",
         help="Enable deprecated filename-gated decoders for parity comparison.",
@@ -105,9 +125,11 @@ def main() -> None:
 
     dumpgrp = resolve_dumpgrp_from_config()
     if not dumpgrp:
+        _print_missing_tools_hint()
         raise RuntimeError("dumpGrp path missing in config.json (key: dumpGrp)")
     dumpgrp_path = Path(dumpgrp)
     if not dumpgrp_path.exists():
+        _print_missing_tools_hint(dumpgrp_path)
         raise FileNotFoundError(f"dumpGrp executable not found: {dumpgrp_path}")
 
     oodle_dll_path = resolve_oodle_from_config()
@@ -141,7 +163,9 @@ def main() -> None:
             print(f"  - {r}")
         raise SystemExit(1)
 
-    if args.split_variants or args.split_collections:
+    split_collections = (not args.no_split_collections) or args.split_variants or args.split_collections
+
+    if split_collections:
         target_dir = output_dir / grp_path.stem
         target_dir.mkdir(parents=True, exist_ok=True)
         out_files = OBJExporter.export_split_variants(meshes, target_dir)

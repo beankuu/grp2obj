@@ -3,6 +3,7 @@
 Converts Dagor GRP resources to Wavefront OBJ format.
 
 **Supported decoders:**
+
 - **77F8232F** (RendInst): renderable instances with multi-LOD support
 - **B4B7D9C4** (DynModel): dynamic renderable scenes with rigid body placement
 - **ACE50000** (Collision): collision mesh geometry (cls boxes, fences, etc.)
@@ -13,6 +14,7 @@ Converts Dagor GRP resources to Wavefront OBJ format.
 ## Architecture
 
 **Modular mixin-based design** (refactored Apr 2026):
+
 - `src/grp_converter.py` — Thin orchestrator (`GRPResourceParser` class)
 - `src/decoders/` — Functional mixins:
   - `mesh_utils.py` — `MeshBuilderMixin` (geometry construction)
@@ -21,45 +23,54 @@ Converts Dagor GRP resources to Wavefront OBJ format.
   - `vertex_stream.py` — `VertexStreamMixin` (fp16, legacy B4)
   - `rendinst.py` — `RendInstDecoderMixin` (77F8232F, meshopt)
   - `dynmodel.py` — `DynModelDecoderMixin` (B4B7D9C4 with world transforms)
-- `src/oodle.py` — Oodle Kraken decompressor (ctypes wrapper)
+- `src/oodle.py` — Oodle-family decompressor (uses open-source `ooz-wasm` via Node.js wrapper)
 
 **Inheritance chain:** `GRPResourceParser` inherits from all mixins via MRO for unified method resolution.
+
+## Installation
+
+### Requirements
+
+- Python 3.9+
+- Node.js 16+ (for `ooz-wasm` decompression)
+
+### Setup
+
+1. Clone the repository
+2. Create Python virtual environment:
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # Linux/macOS: or .venv\Scripts\Activate.ps1 on Windows
+   ```
+
+3. Install `ooz-wasm` npm package for decompression:
+
+   ```bash
+   npm install ooz-wasm
+   ```
+
+4. Download `tools-prebuild.windows-x86_64.7z` from:
+
+  <https://github.com/GaijinEntertainment/DagorEngine/releases>
+
+- Unzip the archive into `lib/` so this path exists:
+
+  `lib/tools/dagor_cdk/windows-x86_64/dumpGrp-dev.exe`
+
+- Update `config.json` if you use a non-default `dumpGrp` location
 
 ## Usage
 
 ### Quick start (recommended)
 
-Extract + convert + report in one step:
+Extract + convert in one step:
 
 ```bash
 python extract_grp.py test_example/grp/usa_m60a1.grp --verbose
 ```
 
-Output: `test_example/output/usa_m60a1.obj`
-
-### Workflow options
-
-**Option 1: Already-extracted resources**
-
-```bash
-# Using main.py wrapper
-python main.py <extracted_dir> [output_dir] [--verbose]
-
-# Or directly via cli.py
-python src/cli.py <extracted_dir> [output_dir] [--verbose]
-```
-
-**Option 2: Batch via shell script**
-
-Windows:
-```batch
-grp2obj.bat <extracted_dir> [output_dir] [--verbose]
-```
-
-Linux/WSL/macOS:
-```bash
-./grp2obj.sh <extracted_dir> [output_dir] [--verbose]
-```
+Output: `test_example/output/usa_m60a1/*.obj` (split by collection/variant by default)
 
 ### Additional options
 
@@ -72,8 +83,9 @@ python extract_grp.py <input.grp> \
   [--scale FLOAT]         # Global scale multiplier for OBJ (default: 1.0) \
   [--mesh-types TYPES]    # rendinst,dynmodel,skeleton,collision,phobj,generic,all \\
   [--lods LIST]           # e.g. 0 or 0,1,2 or all (affects rendinst/dynmodel) \\
-  [--split-variants]      # Export one OBJ per collection/variant (same as --split-collections) \\
-  [--split-collections]   # Alias of --split-variants \\
+  [--split-variants]      # Alias for split output mode (default on) \\
+  [--split-collections]   # Alias for split output mode (default on) \\
+  [--no-split-collections]# Disable default split mode and export one combined OBJ \\
   [--no-auto-scale-fp16]  # Disable fp16 upscaling heuristic
 ```
 
@@ -108,16 +120,6 @@ python extract_grp.py test_example/grp/water_decals.grp --force-clean --scale 0.
   - Heuristic global scan remains as fallback
 - Optional zstd (`flags == 1`) support when `zstandard` Python package is installed
 
-## Extraction Report Rule
-
-For every extraction run, add markdown report documenting:
-
-- Extraction command and environment
-- Extracted file list and class-id buckets
-- Observed structure (header/resource/object grouping)
-- Unknown or uncertain fields/patterns
-- Follow-up verification plan
-
 ## Input / output
 
 Input folder example:
@@ -132,24 +134,43 @@ model__grp_extract/
 Output:
 
 - Default output directory: `output/` inside the extracted folder
-- Single combined OBJ named after input directory (without `__grp_extract`) when split mode is off
-- One OBJ file per decoded resource/variant when `--split-variants` is enabled
+- One OBJ file per decoded resource/variant by default
+- Single combined OBJ named after input directory (without `__grp_extract`) when `--no-split-collections` is used
 
 ## Troubleshooting
 
 If decode fails:
 
 1. Run with `--verbose` and inspect which strategy was attempted.
-2. Verify `oo2core_9_win64.dll` is reachable via `config.json` or default lookup paths.
-3. Confirm extraction is from `dumpGrp -exp` and not mixed/partial files.
+2. Verify Node.js is installed: `node --version`
+3. Verify `ooz-wasm` is installed: `npm ls ooz-wasm`
+4. Check that `lib/ooz-wasm-decompress.mjs` exists and is accessible
+5. If `lib/tools` is missing, download `tools-prebuild.windows-x86_64.7z` from DagorEngine releases and unzip to `lib/`
+6. Confirm extraction is from `dumpGrp -exp` and not mixed/partial files.
 
-## Files
+## Project structure
 
-- `main.py`: canonical converter entrypoint (extracted folder -> OBJ)
-- `grp_converter.py`: compatibility converter entrypoint wrapper
-- `extract_grp.py`: extraction + conversion + report entrypoint
-- `grp2obj.bat` / `grp2obj.sh`: shell wrappers
-- `src/core/`: Python pipeline sources (`extract_report`, `cli`, `grp_converter`, `exporter`, `paths`)
+**Root entry points:**
+
+- `extract_grp.py`: Extract GRP file and convert in one step (grp file → OBJ)
+
+**Source (`src/`):**
+
+- `extract_report.py` — GRP extraction pipeline
+- `grp_converter.py` — Core decoder class (`GRPResourceParser`)
+- `oodle.py` — Oodle decompression wrapper
+- `exporter.py` — OBJ file writer
+- `paths.py` — Config and path resolution
+- `decoders/` — Resource type decoders (collision, skeleton, DynModel, RendInst, etc.)
+
+## Configuration
+
+Edit `config.json` to customize paths for your environment.
+
+**Required settings:**
+
+- `"oodle"` — Path to `lib/ooz-wasm-decompress.mjs` (Oodle decompression via Node.js)
+- `"dumpGrp"` — Path to GRP extraction tool (typically bundled in `lib/tools/dagor_cdk/`)
 
 ## Notes on generated artifacts
 

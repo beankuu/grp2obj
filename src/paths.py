@@ -36,11 +36,12 @@ def _resolve_cfg_path(value: str) -> str:
 
 
 def resolve_oodle_from_config() -> Optional[str]:
+    """Resolve path to ooz-wasm decompressor wrapper."""
     cfg = _load_config()
-    oo = cfg.get("oo2core")
-    if not isinstance(oo, str) or not oo:
+    oodle_path = cfg.get("oodle")
+    if not isinstance(oodle_path, str) or not oodle_path:
         return None
-    return _resolve_cfg_path(oo)
+    return _resolve_cfg_path(oodle_path)
 
 
 def resolve_dumpgrp_from_config() -> Optional[str]:
