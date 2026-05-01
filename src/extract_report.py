@@ -2,7 +2,7 @@
 """Extract a GRP, decode meshes, and export OBJ output.
 
 Output layout:
-  <root>/test_example/output/<stem>.obj
+  <grp_dir>/<stem>/  — OBJ files exported next to the input GRP file
 
 The dumpGrp temp extraction is performed in a TemporaryDirectory and
 discarded after parsing. Raw class-id files (.B4B7D9C4, .03FB59C4, ...),
@@ -71,7 +71,7 @@ def _parse_lods(raw: str) -> Optional[Set[int]]:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("grp_file", help="Input .grp file")
-    ap.add_argument("output_dir", nargs="?", default="", help="OBJ output dir (default: <repo>/test_example/output)")
+    ap.add_argument("output_dir", nargs="?", default="", help="OBJ output dir (default: <grp_dir>/<stem>/)")
     ap.add_argument("--verbose", "-v", action="store_true")
     ap.add_argument("--split-variants", action="store_true")
     ap.add_argument(
@@ -117,10 +117,9 @@ def main() -> None:
 
     if args.output_dir:
         output_dir = Path(args.output_dir).resolve()
-    elif grp_path.parent.name.lower() == "grp":
-        output_dir = (grp_path.parent.parent / "output").resolve()
     else:
-        output_dir = grp_path.parent / "output"
+        output_dir = grp_path.parent / grp_path.stem
+    output_dir.mkdir(parents=True, exist_ok=True)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     dumpgrp = resolve_dumpgrp_from_config()
@@ -166,10 +165,8 @@ def main() -> None:
     split_collections = (not args.no_split_collections) or args.split_variants or args.split_collections
 
     if split_collections:
-        target_dir = output_dir / grp_path.stem
-        target_dir.mkdir(parents=True, exist_ok=True)
-        out_files = OBJExporter.export_split_variants(meshes, target_dir)
-        print(f"[{grp_path.stem}] {len(out_files)} collections -> {target_dir}")
+        out_files = OBJExporter.export_split_variants(meshes, output_dir)
+        print(f"[{grp_path.stem}] {len(out_files)} collections -> {output_dir}")
     else:
         OBJExporter.export(meshes, output_dir, grp_path.stem)
         print(f"[{grp_path.stem}] {len(meshes)} meshes -> {output_dir / (grp_path.stem + '.obj')}")

@@ -4,22 +4,21 @@ Converts Dagor GRP resources to Wavefront OBJ format.
 
 ## Warning
 
+- Without oo2core dll file the converter will still work for most resources, but some large DynModel blocks (e.g. `jap_battleship_fuso` main) may fail to decode and will be skipped.
 - If `lib/oo2core_9_win64.dll` (or your configured DLL path) is missing, the converter automatically falls back to `ooz-wasm`.
-- If you already have a legal local `oo2core` DLL, place it in `lib/` (or point `config.json -> oodle` to it) for best compatibility.
-- Do not publish or commit `oo2core*.dll`; the DLL is proprietary.
+- If you already have a local `oo2core` DLL, place it in `lib/` (or point `config.json -> oodle` to it) for best compatibility.
 
 **Supported decoders:**
 
-- **77F8232F** (RendInst): renderable instances with multi-LOD support
-- **B4B7D9C4** (DynModel): dynamic renderable scenes with rigid body placement
-- **ACE50000** (Collision): collision mesh geometry (cls boxes, fences, etc.)
-- **56F81B6D** (Skeleton): GeomNodeTree bone hierarchies
-- **D543E771** (PhysObj): physics object wireframes (multi-box collision debug)
-- **4E1D5F5E, 40C586F9**: generic encoded meshes
+- RendInst: renderable instances with multi-LOD support
+- DynModel: dynamic renderable scenes with rigid body placement
+- Collision: collision mesh geometry (cls boxes, fences, etc.)
+- Skeleton: GeomNodeTree bone hierarchies
+- PhysObj: physics object wireframes (multi-box collision debug)
 
 ## Architecture
 
-**Modular mixin-based design** (refactored Apr 2026):
+**Modular mixin-based design**:
 
 - `src/grp_converter.py` — Thin orchestrator (`GRPResourceParser` class)
 - `src/decoders/` — Functional mixins:
@@ -72,7 +71,7 @@ Extract + convert in one step:
 python extract_grp.py test_example/grp/usa_m60a1.grp
 ```
 
-Output: `test_example/output/usa_m60a1/*.obj` (split by collection/variant by default)
+Output: `test_example/grp/usa_m60a1/*.obj` (next to the GRP file, split by collection/variant by default)
 
 ### Additional options
 

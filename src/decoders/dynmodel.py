@@ -464,7 +464,7 @@ class DynModelDecoderMixin:
                 name_use_count[node_name] = use_n + 1
                 disambig = f"_{use_n}" if use_n > 0 else ""
                 obj_name = f"{stem}_lod{lod_idx}_{node_name}{disambig}"
-                if wtm_lookup is not None:
+                if wtm_lookup is not None and node_name not in ("root", "@root"):
                     w = wtm_lookup.get(node_name)
                     if w is None and node_name.startswith("@"):
                         w = wtm_lookup.get(node_name[1:])
