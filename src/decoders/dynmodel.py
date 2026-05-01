@@ -2,12 +2,27 @@
 
 import math
 import struct
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple
 
 Mesh = Dict[str, object]
 
 
 class DynModelDecoderMixin:
+    if TYPE_CHECKING:
+        oodle: Any
+        _skeleton_wtm_cache: Dict[str, Dict[str, Tuple[float, ...]]]
+        _VDATA_PACKED_IB: int
+        _VDATA_I32: int
+        _VSDT_SIZES: Dict[int, int]
+
+        def _log(self, msg: str) -> None: ...
+
+        def _zstd_decompress(self, payload: bytes) -> Optional[bytes]: ...
+
+        @staticmethod
+        def _decode_meshopt_index_sequence(
+            buf: bytes, index_count: int
+        ) -> Optional[List[int]]: ...
 
     def _decode_b4b7d9c4_dynmodel(
         self, data: bytes, filename: str
@@ -458,39 +473,14 @@ class DynModelDecoderMixin:
                         c1x, c1y, c1z = w[3], w[4], w[5]
                         c2x, c2y, c2z = w[6], w[7], w[8]
                         c3x, c3y, c3z = w[9], w[10], w[11]
-                        # Root node correction: detect and undo 90-degree Y<->Z swap.
-                        # Some Dagor models (e.g. m60a1) have a pre-baked root rotation
-                        # that swaps Y and Z axes (Y->Z, Z->Y). This is not part of the
-                        # model's intended orientation and causes a 90-degree misalignment
-                        # in the OBJ output. The pattern to detect is:
-                        #   Col0 = (±1, 0, 0)
-                        #   Col1 = (0, 0, ±1)
-                        #   Col2 = (0, ±1, 0)
-                        # When detected, we apply an inverse Y<->Z transformation.
-                        if node_name in ("root", "@root") and (
-                            abs(abs(c0x) - 1.0) < 0.01
-                            and abs(c0y) < 0.01
-                            and abs(c0z) < 0.01
-                            and abs(c1x) < 0.01
-                            and abs(c1z) > 0.9
-                            and abs(c1y) < 0.01
-                            and abs(c2x) < 0.01
-                            and abs(c2y) > 0.9
-                            and abs(c2z) < 0.01
-                        ):
-                            # Swap Y<->Z to correct the rotation: (x, z, y) -> (x, y, z)
-                            verts_combined = [
-                                (vx, vz, vy) for (vx, vy, vz) in verts_combined
-                            ]
-                        else:
-                            verts_combined = [
-                                (
-                                    c0x * vx + c1x * vy + c2x * vz + c3x,
-                                    c0y * vx + c1y * vy + c2y * vz + c3y,
-                                    c0z * vx + c1z * vy + c2z * vz + c3z,
-                                )
-                                for (vx, vy, vz) in verts_combined
-                            ]
+                        verts_combined = [
+                            (
+                                c0x * vx + c1x * vy + c2x * vz + c3x,
+                                c0y * vx + c1y * vy + c2y * vz + c3y,
+                                c0z * vx + c1z * vy + c2z * vz + c3z,
+                            )
+                            for (vx, vy, vz) in verts_combined
+                        ]
                 m: Mesh = {
                     "filename": f"{obj_name}.B4B7D9C4",
                     "vertices": verts_combined,

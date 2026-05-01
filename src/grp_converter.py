@@ -17,7 +17,7 @@ Module structure:
 
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 try:
     import zstandard as zstd
@@ -40,7 +40,7 @@ from decoders.rendinst import RendInstDecoderMixin
 from decoders.dynmodel import DynModelDecoderMixin
 
 
-Mesh = Dict[str, object]
+Mesh = Dict[str, Any]
 
 
 class GRPResourceParser(
@@ -245,9 +245,12 @@ class GRPResourceParser(
             # the rest. Fall back to the legacy heuristic decoder for
             # placeholder/tiny skeletons that don't match the
             # GeomNodeTree binary layout.
-            bone_meshes = self._decode_geom_node_tree(data, filepath.name)
+            cache_key = filepath.name.lower()
+            bone_meshes = self._skeleton_bone_cache.get(cache_key)
+            if bone_meshes is None:
+                bone_meshes = self._decode_geom_node_tree(data, filepath.name)
             if bone_meshes:
-                self._skeleton_bone_cache[filepath.name.lower()] = bone_meshes
+                self._skeleton_bone_cache[cache_key] = bone_meshes
                 mesh = bone_meshes[0]
             else:
                 mesh = self._decode_tiny_skeleton_marker(data, filepath.name)
@@ -363,6 +366,10 @@ class GRPResourceParser(
             m["normals"] = None
             m["_collision_substituted_from"] = coll.get("filename")
 
+    @staticmethod
+    def _mesh_filename_stem(mesh: Mesh) -> str:
+        return str(mesh.get("filename", "")).rsplit(".", 1)[0].lower()
+
     def parse_directory(self, dirpath: Path) -> List[Mesh]:
         meshes: List[Mesh] = []
         if not dirpath.exists():
@@ -475,6 +482,7 @@ class GRPResourceParser(
         # decoded the index codec), substitute the geometry from a sibling
         # ``*_collision.ACE50000`` mesh when one is available.
         self._substitute_collision_for_nonflat(meshes)
+
         filtered = self._filter_meshes(meshes)
         if self.verbose:
             self._log(f"Filtering retained {len(filtered)}/{len(meshes)} meshes")

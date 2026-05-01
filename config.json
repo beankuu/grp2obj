@@ -1,4 +1,4 @@
 {
-  "oodle": ".\\lib\\ooz-wasm-decompress.mjs",
+  "oodle": ".\\lib\\oo2core_9_win64.dll",
   "dumpGrp": ".\\lib\\tools\\dagor_cdk\\windows-x86_64\\dumpGrp-dev.exe"
 }

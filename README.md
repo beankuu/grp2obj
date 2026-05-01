@@ -2,6 +2,12 @@
 
 Converts Dagor GRP resources to Wavefront OBJ format.
 
+## Warning
+
+- If `lib/oo2core_9_win64.dll` (or your configured DLL path) is missing, the converter automatically falls back to `ooz-wasm`.
+- If you already have a legal local `oo2core` DLL, place it in `lib/` (or point `config.json -> oodle` to it) for best compatibility.
+- Do not publish or commit `oo2core*.dll`; the DLL is proprietary.
+
 **Supported decoders:**
 
 - **77F8232F** (RendInst): renderable instances with multi-LOD support
@@ -23,7 +29,7 @@ Converts Dagor GRP resources to Wavefront OBJ format.
   - `vertex_stream.py` — `VertexStreamMixin` (fp16, legacy B4)
   - `rendinst.py` — `RendInstDecoderMixin` (77F8232F, meshopt)
   - `dynmodel.py` — `DynModelDecoderMixin` (B4B7D9C4 with world transforms)
-- `src/oodle.py` — Oodle-family decompressor (uses open-source `ooz-wasm` via Node.js wrapper)
+- `src/oodle.py` — Oodle-family decompressor (user-supplied `oo2core` DLL by default, fallback `ooz-wasm` wrapper)
 
 **Inheritance chain:** `GRPResourceParser` inherits from all mixins via MRO for unified method resolution.
 
@@ -32,33 +38,29 @@ Converts Dagor GRP resources to Wavefront OBJ format.
 ### Requirements
 
 - Python 3.9+
-- Node.js 16+ (for `ooz-wasm` decompression)
+- Node.js 16+ (for `ooz-wasm` fallback decompression)
+- Optional but recommended: local `oo2core` DLL at `lib/oo2core_9_win64.dll` (or set another path in `config.json`)
 
 ### Setup
 
-1. Clone the repository
-2. Create Python virtual environment:
+1. Clone the repository.
+2. Create the Python virtual environment:
 
-   ```bash
+   ```powershell
    python -m venv .venv
-   source .venv/bin/activate  # Linux/macOS: or .venv\Scripts\Activate.ps1 on Windows
+   .venv\Scripts\Activate.ps1
    ```
 
-3. Install `ooz-wasm` npm package for decompression:
+3. Install `ooz-wasm` npm dependency for fallback decompression:
 
-   ```bash
-   npm install ooz-wasm
+  ```bash
+  npm install
    ```
 
-4. Download `tools-prebuild.windows-x86_64.7z` from:
+1. Download `tools-prebuild.windows-x86_64.7z` from <https://github.com/GaijinEntertainment/DagorEngine/releases> and unzip into `lib/` so this path exists: `lib/tools/dagor_cdk/windows-x86_64/dumpGrp-dev.exe`. Update `config.json` if you use a non-default `dumpGrp` location.
 
-  <https://github.com/GaijinEntertainment/DagorEngine/releases>
-
-- Unzip the archive into `lib/` so this path exists:
-
-  `lib/tools/dagor_cdk/windows-x86_64/dumpGrp-dev.exe`
-
-- Update `config.json` if you use a non-default `dumpGrp` location
+- If you have a legal local DLL, use `lib/oo2core_9_win64.dll` (default config) or set `OODLE_DLL=C:\path\to\oo2core_9_win64.dll`.
+- If DLL is missing, fallback is automatic via `ooz-wasm`.
 
 ## Usage
 
@@ -67,7 +69,7 @@ Converts Dagor GRP resources to Wavefront OBJ format.
 Extract + convert in one step:
 
 ```bash
-python extract_grp.py test_example/grp/usa_m60a1.grp --verbose
+python extract_grp.py test_example/grp/usa_m60a1.grp
 ```
 
 Output: `test_example/output/usa_m60a1/*.obj` (split by collection/variant by default)
@@ -76,21 +78,19 @@ Output: `test_example/output/usa_m60a1/*.obj` (split by collection/variant by de
 
 ```bash
 python extract_grp.py <input.grp> \
-  [--extract-dir DIR]     # Override extract folder (default: input_dir/.extract) \
-  [--output-dir DIR]      # Output OBJ folder (default: input_dir/output) \
+  [output_dir]            # Optional OBJ output dir \
   [--verbose]             # Enable debug logging \
-  [--force-clean]         # Re-extract even if folder exists \
-  [--scale FLOAT]         # Global scale multiplier for OBJ (default: 1.0) \
   [--mesh-types TYPES]    # rendinst,dynmodel,skeleton,collision,phobj,generic,all \\
   [--lods LIST]           # e.g. 0 or 0,1,2 or all (affects rendinst/dynmodel) \\
   [--split-variants]      # Alias for split output mode (default on) \\
   [--split-collections]   # Alias for split output mode (default on) \\
   [--no-split-collections]# Disable default split mode and export one combined OBJ \\
-  [--no-auto-scale-fp16]  # Disable fp16 upscaling heuristic
+  [--compare-file-specific]
 ```
 
 Default filtering is strict: `--mesh-types dynmodel --lods 0`.
 If dynmodel yields no meshes, extraction automatically falls back to `rendinst` with the same LOD filter.
+If a `.B4B7D9C4` DynModel resource exists but its compressed vertex/index block is unsupported by the active Oodle backend, the variant is simply skipped (no synthetic collision-island fallback). Use `--mesh-types collision,skeleton` if you need the auxiliary geometry explicitly.
 Use `--mesh-types all --lods all` to include everything.
 
 ## Examples
@@ -106,7 +106,7 @@ python extract_grp.py test_example/grp/jp_a6m2.grp --split-variants
 python extract_grp.py test_example/grp/usa_fa_18.grp --split-collections
 
 # Prop/scenery (water decals)
-python extract_grp.py test_example/grp/water_decals.grp --force-clean --scale 0.5
+python extract_grp.py test_example/grp/water_decals.grp --verbose
 ```
 
 ## What is implemented now
@@ -119,6 +119,11 @@ python extract_grp.py test_example/grp/water_decals.grp --force-clean --scale 0.
   - Header dword candidates seed local FP16 stream search
   - Heuristic global scan remains as fallback
 - Optional zstd (`flags == 1`) support when `zstandard` Python package is installed
+- Oodle backend strategy:
+  - User-supplied native `oo2core` DLL (via `OODLE_DLL` or `config.json`) is preferred and used first
+  - `ooz-wasm` is the automatic fallback when DLL is missing or load/decode fails
+  - Some large ship DynModel blocks (e.g. `jap_battleship_fuso` main DynModel) may still require native DLL compatibility
+  - When neither backend can decode a B4 block, the affected DynModel variant is skipped instead of being filled with collision-island placeholders
 
 ## Input / output
 
@@ -142,10 +147,10 @@ Output:
 If decode fails:
 
 1. Run with `--verbose` and inspect which strategy was attempted.
-2. Verify Node.js is installed: `node --version`
-3. Verify `ooz-wasm` is installed: `npm ls ooz-wasm`
-4. Check that `lib/ooz-wasm-decompress.mjs` exists and is accessible
-5. If `lib/tools` is missing, download `tools-prebuild.windows-x86_64.7z` from DagorEngine releases and unzip to `lib/`
+2. Verify DLL path in `config.json` points to a real file (default: `lib/oo2core_9_win64.dll`).
+3. Verify fallback dependency is installed: `npm install` and `node --version`.
+4. For large DynModel blocks that fallback rejects (e.g. `jap_battleship_fuso` main), use a local legal `oo2core` DLL via `OODLE_DLL`.
+5. If `lib/tools` is missing, download `tools-prebuild.windows-x86_64.7z` from DagorEngine releases and unzip to `lib/`.
 6. Confirm extraction is from `dumpGrp -exp` and not mixed/partial files.
 
 ## Project structure
@@ -158,7 +163,7 @@ If decode fails:
 
 - `extract_report.py` — GRP extraction pipeline
 - `grp_converter.py` — Core decoder class (`GRPResourceParser`)
-- `oodle.py` — Oodle decompression wrapper
+- `oodle.py` — Oodle decompression wrapper (configured native DLL + `ooz-wasm` fallback)
 - `exporter.py` — OBJ file writer
 - `paths.py` — Config and path resolution
 - `decoders/` — Resource type decoders (collision, skeleton, DynModel, RendInst, etc.)
@@ -169,8 +174,13 @@ Edit `config.json` to customize paths for your environment.
 
 **Required settings:**
 
-- `"oodle"` — Path to `lib/ooz-wasm-decompress.mjs` (Oodle decompression via Node.js)
+- `"oodle"` — Path to user-owned `oo2core*.dll` (default: `.\lib\oo2core_9_win64.dll`)
 - `"dumpGrp"` — Path to GRP extraction tool (typically bundled in `lib/tools/dagor_cdk/`)
+
+Environment variables override the need to edit `config.json` for local-only files:
+
+- `OODLE_DLL` — path to a legal local `oo2core` DLL. Best compatibility, cannot be redistributed.
+- `OODLE_DLL` is optional; when not set or when the DLL path is missing/invalid, `ooz-wasm` fallback is attempted automatically.
 
 ## Notes on generated artifacts
 

@@ -3,12 +3,13 @@
 Toolchain used:
 - `dumpGrp-dev.exe -exp`
 - `grp_converter/grp_converter.py --verbose --split-variants`
-- Source subset: B4-bearing samples from `example/model/small_grps`
+- Source subset: B4-bearing samples from `example/model/small_grps` plus targeted ship regression cases
+- Oodle backends: user-supplied `oo2core` DLL (primary) and `ooz-wasm` Node fallback
 
 ## Summary
 
-- B4-bearing samples tested: `4`
-- Native geometry successes: `3`
+- B4-bearing samples tested: `5`
+- Native geometry successes: `4`
 - Synthetic fallback successes: `1`
 - Failed converter runs: `0`
 - Best broad geometry sample: `fr_pships_weaponry.grp`
@@ -23,6 +24,7 @@ Toolchain used:
 | `jp_a6m2_n.grp` | PASS | 2 | 2 | 959 | 779 | Good compact aircraft sample with full resource mix |
 | `usa_towed_at_m40.grp` | PASS | 3 | 3 | 1164 | 794 | Good ground-vehicle sample with base/dmg/xray variants |
 | `water_decals.grp` | PASS (synthetic) | 1 | 1 | 9 | 8 | Tiny special-case sample; exported as a planar fallback inferred from parameter bounds |
+| `jap_battleship_fuso.grp` | PASS | 3 | 3 | varies | varies | Base/dmg/xray decode with a local user-supplied `oo2core` DLL; without that DLL, publishable open decoders need fallback geometry for the base resource |
 
 ## Details
 
@@ -75,17 +77,31 @@ Toolchain used:
   - Payload contains sparse parameters and an `@root` string instead of a decompression/table header followed by a vertex stream
   - Current converter behavior treats this as a tiny parameter block and synthesizes a 3x3 planar mesh from the inferred bounds
 
+### `jap_battleship_fuso.grp`
+- Extracted B4 resources: `3`
+- Exported OBJ files with default filters: `3`
+- Output variants:
+  - `battleship_fuso.obj`
+  - `battleship_fuso_dmg.obj`
+  - `battleship_fuso_xray.obj`
+- Observations:
+  - `battleship_fuso_dmg.B4B7D9C4` and `battleship_fuso_xray.B4B7D9C4` decode as native DynModel rigid-node meshes via `oo2core` DLL or `ooz-wasm` fallback
+  - `battleship_fuso.B4B7D9C4` main block requires a local `oo2core_9_win64.dll`; `ooz-wasm` fallback cannot decode it
+  - When neither backend can decode the main block, the variant is now skipped instead of being filled with collision-island placeholders
+  - With a working backend, base LOD0 exports real DynModel rigid-node objects such as `body`, `rudder_01`, and `propeller_03`
+
 ## Recommended Focus Order
 
 1. `fr_pships_weaponry.grp`
 2. `jp_a6m2_n.grp`
 3. `usa_towed_at_m40.grp`
 4. `water_decals.grp`
+5. `jap_battleship_fuso.grp`
 
 ## Takeaway
 
 For current B4 geometry work, the compact regression pack now contains:
-- `3` native geometry converter samples
-- `1` tiny special-case synthetic sample
+- `4` native geometry converter samples
+- `1` synthetic fallback sample
 
 That is a good balance for iterative decoder work: broad success coverage plus a tiny special-case fallback case.
