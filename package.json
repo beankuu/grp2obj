@@ -1,6 +1,0 @@
-{
-  "private": true,
-  "dependencies": {
-    "ooz-wasm": "^2.0.0"
-  }
-}

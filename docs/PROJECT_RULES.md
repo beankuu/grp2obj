@@ -2,20 +2,16 @@
 
 ## Layout
 
-- Root contains entrypoints only:
-  - `extract_grp.py`
-  - top-level docs/config/data files
-- Python implementation files live under `src/`.
-- Imported external reference assets live under `reference/wt_skinmodder/`.
+- Rust implementation lives in `rust/`.
+- The main CLI is `extract_grp`, built from `rust/main.rs`.
+- Top-level files are limited to docs, config, build metadata, and stable entry/build scripts.
 - Temporary throwaway scripts live under `scratch/`.
 
-## Import / Path Rules
+## Path Rules
 
-- Implementation modules must not assume they run from repository root.
+- Implementation code must not assume it runs from repository root.
 - Config and library path lookup should resolve from project root discovery, not from current working directory only.
-- New tools should be added under `src/` first.
-- Every extraction run must produce markdown report with structure notes and unknown/uncertain parts.
-- Preferred extraction command: `python extract_grp.py <input.grp> ...`.
+- Preferred extraction command: `cargo run -- <input.grp> [output_dir] [--verbose]`.
 
 ## Naming
 

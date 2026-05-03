@@ -3,23 +3,22 @@ Third-Party Notices
 
 This project uses third-party software. License terms for those components are listed below.
 
-1) ooz-wasm
------------
-Project: https://github.com/SnosMe/ooz-wasm
-License: GNU General Public License v3.0 (GPL-3.0)
-Local copy: licenses/GPL-3.0.txt
+1) oozextract
+-------------
+Project: https://crates.io/crates/oozextract
+License: MIT
 
 Notes:
-- The fallback decompression wrapper in lib/ooz-wasm-decompress.mjs depends on the npm package ooz-wasm.
-- If you redistribute binaries that include this dependency, review GPLv3 obligations carefully.
+- The Rust DynModel decoder uses the `oozextract` crate for Oodle-family decompression.
+- Preserve upstream attribution where required by your redistribution flow.
 
 2) Dagor Engine tool (dumpGrp-dev.exe)
----------------------------------------
+--------------------------------------
 Project: https://github.com/GaijinEntertainment/DagorEngine
 License: BSD 3-Clause (Dagor Engine license text includes additional notices)
 Local copy: licenses/BSD-3-Clause.txt
 
 Notes:
-- This repository expects dumpGrp-dev.exe in lib/.
+- This repository expects dumpGrp-dev.exe in `lib/`.
 - Keep attribution and license text with redistributions.
 

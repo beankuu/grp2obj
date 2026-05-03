@@ -1,10 +1,11 @@
 # small_grps B4 Converter Matrix
 
 Toolchain used:
+
 - `dumpGrp-dev.exe -exp`
-- `grp_converter/grp_converter.py --verbose --split-variants`
+- `cargo run -- --verbose`
 - Source subset: B4-bearing samples from `example/model/small_grps` plus targeted ship regression cases
-- Oodle backends: user-supplied `oo2core` DLL (primary) and `ooz-wasm` Node fallback
+- Oodle backend: Rust `oozextract`
 
 ## Summary
 
@@ -19,16 +20,17 @@ Toolchain used:
 ## Matrix
 
 | GRP | Converter | B4 blobs | OBJ files | Vertices | Faces | Notes |
-|---|---|---:|---:|---:|---:|---|
+| --- | --- | ---: | ---: | ---: | ---: | --- |
 | `fr_pships_weaponry.grp` | PASS | 9 | 9 | 1567 | 1259 | Strongest breadth sample; repeated torpedo/depth-charge patterns |
 | `jp_a6m2_n.grp` | PASS | 2 | 2 | 959 | 779 | Good compact aircraft sample with full resource mix |
 | `usa_towed_at_m40.grp` | PASS | 3 | 3 | 1164 | 794 | Good ground-vehicle sample with base/dmg/xray variants |
 | `water_decals.grp` | PASS (synthetic) | 1 | 1 | 9 | 8 | Tiny special-case sample; exported as a planar fallback inferred from parameter bounds |
-| `jap_battleship_fuso.grp` | PASS | 3 | 3 | varies | varies | Base/dmg/xray decode with a local user-supplied `oo2core` DLL; without that DLL, publishable open decoders need fallback geometry for the base resource |
+| `jap_battleship_fuso.grp` | PASS | 3 | 3 | varies | varies | Base/dmg/xray regression case |
 
 ## Details
 
 ### `fr_pships_weaponry.grp`
+
 - Extracted B4 resources: `9`
 - Exported OBJ files: `9`
 - Total vertices: `1567`
@@ -39,6 +41,7 @@ Toolchain used:
   - Good candidate for studying repeated B4 layouts and decoder consistency
 
 ### `jp_a6m2_n.grp`
+
 - Extracted B4 resources: `2`
 - Exported OBJ files: `2`
 - Total vertices: `959`
@@ -49,6 +52,7 @@ Toolchain used:
   - Good compact multi-part aircraft repro
 
 ### `usa_towed_at_m40.grp`
+
 - Extracted B4 resources: `3`
 - Exported OBJ files: `3`
 - Total vertices: `1164`
@@ -59,6 +63,7 @@ Toolchain used:
   - Good cross-check against aircraft-specific assumptions
 
 ### `water_decals.grp`
+
 - Extracted B4 resources: `1`
 - Exported OBJ files: `1`
 - Total vertices: `9`
@@ -78,6 +83,7 @@ Toolchain used:
   - Current converter behavior treats this as a tiny parameter block and synthesizes a 3x3 planar mesh from the inferred bounds
 
 ### `jap_battleship_fuso.grp`
+
 - Extracted B4 resources: `3`
 - Exported OBJ files with default filters: `3`
 - Output variants:
@@ -85,8 +91,8 @@ Toolchain used:
   - `battleship_fuso_dmg.obj`
   - `battleship_fuso_xray.obj`
 - Observations:
-  - `battleship_fuso_dmg.B4B7D9C4` and `battleship_fuso_xray.B4B7D9C4` decode as native DynModel rigid-node meshes via `oo2core` DLL or `ooz-wasm` fallback
-  - `battleship_fuso.B4B7D9C4` main block requires a local `oo2core_9_win64.dll`; `ooz-wasm` fallback cannot decode it
+  - `battleship_fuso_dmg.B4B7D9C4` and `battleship_fuso_xray.B4B7D9C4` decode as native DynModel rigid-node meshes
+  - `battleship_fuso.B4B7D9C4` main block remains a useful large DynModel regression case
   - When neither backend can decode the main block, the variant is now skipped instead of being filled with collision-island placeholders
   - With a working backend, base LOD0 exports real DynModel rigid-node objects such as `body`, `rudder_01`, and `propeller_03`
 
@@ -101,6 +107,7 @@ Toolchain used:
 ## Takeaway
 
 For current B4 geometry work, the compact regression pack now contains:
+
 - `4` native geometry converter samples
 - `1` synthetic fallback sample
 

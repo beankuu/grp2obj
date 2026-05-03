@@ -4,11 +4,11 @@ Class ID: `77F8232F` → `RendInstGameRes`. A static rendering instance with
 N LODs, plus per-LOD vertex/index buffers, packed normals, UVs, and color.
 
 Reference samples used in this document:
+
 - [test_example/dump_volok/avg_volokolamsk_lake.77F8232F](test_example/dump_volok/avg_volokolamsk_lake.77F8232F) — 1 680 bytes, 2 LODs (24 + 56 verts), 1 600 m / 20 000 m.
 - [test_example/dump_poland/avg_poland_iced_lake.77F8232F](test_example/dump_poland/avg_poland_iced_lake.77F8232F) — 15 184 bytes, 2 LODs (404 + 621 verts), 1 600 m / 20 000 m.
 
-Both decode end-to-end through [src/grp_converter.py](src/grp_converter.py)
-into Wavefront OBJ files with one object per LOD plus the collision mesh.
+Both are retained as RendInst format references for Rust decoder work.
 
 ---
 
@@ -142,14 +142,10 @@ The constants `88 / 40 / 56 / 80 / 1` are byte-offsets used by Dagor's
 ## 5. Compression — Oodle Kraken
 
 The opaque payload at `[0x1C .. 0x1C + comp_size]` is **Oodle Kraken**
-LZ-compressed. Decompress with `OodleLZ_Decompress` (from
-`oo2core_9_win64.dll`):
+LZ-compressed. Decompress with the Rust `oozextract` backend or an equivalent Oodle Kraken decoder:
 
-```python
-out_buf = ctypes.create_string_buffer(raw_size)
-OodleLZ_Decompress(data[0x1C:0x1C + comp_size], comp_size,
-                   out_buf, raw_size,
-                   0, 0, 0, None, 0, None, None, None, 0, 3)
+```text
+decompressed = oodle_kraken_decode(data[0x1C : 0x1C + comp_size], raw_size)
 ```
 
 Verified for both samples: the first 4 bytes of the compressed payload
@@ -181,8 +177,7 @@ Hypotheses for the codec (untested):
 2. Cache-based vertex re-use codec à la `meshoptimizer` v1.
 3. Triangle-strip with vertex-cache delta coding.
 
-Workaround in [src/grp_converter.py](src/grp_converter.py): the rendInst
-decoder runs a 2D Delaunay triangulation in the X-Z plane on the
+Previous workaround: the rendInst decoder ran a 2D Delaunay triangulation in the X-Z plane on the
 extracted vertex positions. This produces an **exact** triangulation
 for flat rendInst meshes (lakes, water decals, ground cards) and a
 plausible-but-not-authoritative one for non-flat assets, so we still
@@ -246,7 +241,7 @@ because they are flat lakes.)
 
 ## 11. Code references
 
-- Decoder: `RendInstParser._decode_77f8232f_rendinst` in [src/grp_converter.py](src/grp_converter.py)
-- Header struct: `parse_rendinst_preamble` in [src/dagor_resources.py](src/dagor_resources.py)
+- Decoder target: Rust `77F8232F` RendInst implementation in `rust/main.rs`
+- Header struct target: Rust RendInst preamble parsing
 - Sample assets: [test_example/dump_volok/](test_example/dump_volok/), [test_example/dump_poland/](test_example/dump_poland/)
 - OBJ outputs: [test_example/output/avg_volokolamsk.obj](test_example/output/avg_volokolamsk.obj), [test_example/output/avg_poland_snow.obj](test_example/output/avg_poland_snow.obj)
