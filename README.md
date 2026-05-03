@@ -56,7 +56,7 @@ Converts Dagor GRP resources to Wavefront OBJ format.
   npm install
    ```
 
-1. Download `tools-prebuild.windows-x86_64.7z` from <https://github.com/GaijinEntertainment/DagorEngine/releases> and unzip into `lib/` so this path exists: `lib/tools/dagor_cdk/windows-x86_64/dumpGrp-dev.exe`. Update `config.json` if you use a non-default `dumpGrp` location.
+1. Download `tools-prebuild.windows-x86_64.7z` from <https://github.com/GaijinEntertainment/DagorEngine/releases>, extract `dumpGrp-dev.exe`, and place it at `lib/dumpGrp-dev.exe`. Update `config.json` if you use a non-default `dumpGrp` location.
 
 - If you have a legal local DLL, use `lib/oo2core_9_win64.dll` (default config) or set `OODLE_DLL=C:\path\to\oo2core_9_win64.dll`.
 - If DLL is missing, fallback is automatic via `ooz-wasm`.
@@ -149,7 +149,7 @@ If decode fails:
 2. Verify DLL path in `config.json` points to a real file (default: `lib/oo2core_9_win64.dll`).
 3. Verify fallback dependency is installed: `npm install` and `node --version`.
 4. For large DynModel blocks that fallback rejects (e.g. `jap_battleship_fuso` main), use a local legal `oo2core` DLL via `OODLE_DLL`.
-5. If `lib/tools` is missing, download `tools-prebuild.windows-x86_64.7z` from DagorEngine releases and unzip to `lib/`.
+5. If `lib/dumpGrp-dev.exe` is missing, download `tools-prebuild.windows-x86_64.7z` from DagorEngine releases and copy `dumpGrp-dev.exe` to `lib/`.
 6. Confirm extraction is from `dumpGrp -exp` and not mixed/partial files.
 
 ## Project structure
@@ -174,14 +174,20 @@ Edit `config.json` to customize paths for your environment.
 **Required settings:**
 
 - `"oodle"` — Path to user-owned `oo2core*.dll` (default: `.\lib\oo2core_9_win64.dll`)
-- `"dumpGrp"` — Path to GRP extraction tool (typically bundled in `lib/tools/dagor_cdk/`)
+- `"dumpGrp"` — Path to GRP extraction tool (default: `.\lib\dumpGrp-dev.exe`)
 
 Environment variables override the need to edit `config.json` for local-only files:
 
 - `OODLE_DLL` — path to a legal local `oo2core` DLL. Best compatibility, cannot be redistributed.
 - `OODLE_DLL` is optional; when not set or when the DLL path is missing/invalid, `ooz-wasm` fallback is attempted automatically.
 
+## License
+
+This project is licensed under GNU GPL v3.0. See the root `LICENSE` file.
+
 ## Notes on generated artifacts
+
+See `THIRD_PARTY_NOTICES.txt` and `licenses/` for third-party license texts and attribution details.
 
 Generated diagnostics are intentionally ignored via root `.gitignore`:
 

@@ -25,17 +25,15 @@ TOOLS_PREBUILD_URL = "https://github.com/GaijinEntertainment/DagorEngine/release
 
 def _print_missing_tools_hint(dumpgrp_path: Optional[Path] = None) -> None:
     root = project_root()
-    lib_tools_dir = root / "lib" / "tools"
-    expected_dumpgrp = root / "lib" / "tools" / "dagor_cdk" / "windows-x86_64" / "dumpGrp-dev.exe"
+    expected_dumpgrp = root / "lib" / "dumpGrp-dev.exe"
 
     print("[setup] Missing Dagor extraction tools.")
     if dumpgrp_path is not None:
         print(f"[setup] Configured dumpGrp path not found: {dumpgrp_path}")
-    print(f"[setup] Expected tools directory: {lib_tools_dir}")
     print(f"[setup] Expected dumpGrp path:   {expected_dumpgrp}")
     print(f"[setup] Download tools-prebuild.windows-x86_64.7z from: {TOOLS_PREBUILD_URL}")
-    print(f"[setup] Unzip it into: {root / 'lib'}")
-    print("[setup] Result should include: lib/tools/dagor_cdk/windows-x86_64/dumpGrp-dev.exe")
+    print(f"[setup] Extract and copy dumpGrp-dev.exe into: {root / 'lib'}")
+    print("[setup] Result should include: lib/dumpGrp-dev.exe")
 
 
 def _parse_mesh_types(raw: str) -> Set[str]:
@@ -120,12 +118,8 @@ def main() -> None:
     else:
         output_dir = grp_path.parent / grp_path.stem
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_dir.mkdir(parents=True, exist_ok=True)
 
     dumpgrp = resolve_dumpgrp_from_config()
-    if not dumpgrp:
-        _print_missing_tools_hint()
-        raise RuntimeError("dumpGrp path missing in config.json (key: dumpGrp)")
     dumpgrp_path = Path(dumpgrp)
     if not dumpgrp_path.exists():
         _print_missing_tools_hint(dumpgrp_path)

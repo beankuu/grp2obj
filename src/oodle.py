@@ -7,6 +7,7 @@ then falls back to the publishable ``ooz-wasm`` Node wrapper.
 import ctypes
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -43,6 +44,14 @@ class OodleDecompressor:
                 dll_search_paths.append(backend_path)
             else:
                 wrapper_search_paths.append(backend_path)
+
+        if getattr(sys, "frozen", False):
+            meipass = getattr(sys, "_MEIPASS", None)
+            if meipass:
+                wrapper_search_paths.append(
+                    os.path.join(meipass, "ooz-wasm-decompress.mjs")
+                )
+
         wrapper_search_paths.extend(
             [
                 "./lib/ooz-wasm-decompress.mjs",

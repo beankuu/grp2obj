@@ -1,10 +1,10 @@
 scratch/
-test_example/
-lib/tools/
+test_*/
 oo2core*.dll
 lib/oo2core*.dll
-lib/tools/ooz/
 tmp_*/
+
+build.sh
 
 .agents
 skills-lock.json

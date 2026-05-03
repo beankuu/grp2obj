@@ -2,13 +2,14 @@
 """Root entrypoint wrapper for extract+convert+report pipeline."""
 
 from pathlib import Path
-import runpy
 import sys
 
-_SCRIPT = Path(__file__).resolve().parent / "src" / "extract_report.py"
+_SRC = Path(__file__).resolve().parent / "src"
+if _SRC.exists():
+    sys.path.insert(0, str(_SRC))
 
-if not _SCRIPT.exists():
-    raise FileNotFoundError(f"Missing source entry: {_SCRIPT}")
+from extract_report import main
 
-sys.path.insert(0, str(_SCRIPT.parent))
-runpy.run_path(str(_SCRIPT), run_name="__main__")
+
+if __name__ == "__main__":
+    main()
