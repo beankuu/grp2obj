@@ -14,5 +14,5 @@ dist/
 .idea/
 
 oo2core*.dll
-lib/oo2core*.dll
+lib/*
 lib/dumpGrp-dev.exe

@@ -5,7 +5,7 @@ Converts Dagor GRP resources to Wavefront OBJ format.
 ## Warning
 
 - The converter is now Rust-only.
-- `dumpGrp-dev.exe` is still required for container extraction.
+- `dumpGrp` is still required for container extraction (`dumpGrp-dev.exe` on Windows).
 
 **Supported decoders:**
 
@@ -17,7 +17,11 @@ Converts Dagor GRP resources to Wavefront OBJ format.
 
 ## Architecture
 
-- `rust/main.rs` — Rust CLI for extraction orchestration, DynModel decode, collision decode, skeleton WTM application, and OBJ export
+- `rust/main.rs` — Thin CLI entrypoint and shared type/module wiring
+- `rust/pipeline.rs` — Extraction pipeline orchestration (input/output/temp/execution flow)
+- `rust/settings.rs` — Root/config discovery and `dumpGrp` path resolution/bootstrap
+- `rust/decode.rs` — Resource decode logic (ACE50000/B4B7D9C4/skeleton helpers)
+- `rust/export.rs` — OBJ export and variant split output
 - `Cargo.toml` — Rust package manifest (`oozextract` + `zstd`)
 - `Cargo.lock` — Locked Rust dependency graph for reproducible builds
 
@@ -26,12 +30,14 @@ Converts Dagor GRP resources to Wavefront OBJ format.
 ### Requirements
 
 - Rust toolchain (`cargo`, `rustc`)
-- `lib/dumpGrp-dev.exe`
+- `dumpGrp` executable available via config path, env var, default `lib/` location, or `PATH`
 
 ### Setup
 
 1. Clone the repository.
-2. Download `tools-prebuild.windows-x86_64.7z` from <https://github.com/GaijinEntertainment/DagorEngine/releases>, extract `dumpGrp-dev.exe`, and place it at `lib/dumpGrp-dev.exe`.
+2. Install `dumpGrp` for your environment.
+  - Windows: if missing, the tool can prompt to auto-download from the latest DagorEngine release.
+  - Any OS: you can point to your binary through `config.json` (`dumpGrpPath`) or `GRP2OBJ_DUMPGRP`.
 3. Build the Rust CLI:
 
   ```powershell
@@ -98,7 +104,7 @@ Output:
 If decode fails:
 
 1. Run with `--verbose` and inspect the resource-specific log lines.
-2. Confirm `lib/dumpGrp-dev.exe` exists or `config.json -> dumpGrp` points to a valid path.
+2. Confirm your binary exists and path resolution is valid (`config.json -> dumpGrpPath`/`dumpGrp` or `GRP2OBJ_DUMPGRP`).
 3. Confirm extraction is from `dumpGrp -exp` and not mixed/partial files.
 
 ## Project structure
@@ -110,7 +116,11 @@ If decode fails:
 
 **Source:**
 
-- `rust/main.rs` — CLI, extraction orchestration, decoding, and OBJ export
+- `rust/main.rs` — CLI entry and module wiring
+- `rust/pipeline.rs` — pipeline orchestration
+- `rust/settings.rs` — tool path/config resolution
+- `rust/decode.rs` — decode pipeline implementation
+- `rust/export.rs` — OBJ export pipeline implementation
 
 ## Configuration
 
@@ -118,7 +128,9 @@ Edit `config.json` to customize paths for your environment.
 
 **Config settings:**
 
-- `"dumpGrp"` — Path to GRP extraction tool (default: `.\lib\dumpGrp-dev.exe`)
+- `"dumpGrpPath"` — Preferred path to GRP extraction tool (absolute or relative to repo root)
+- `"dumpGrp"` — Backward-compatible alias for `dumpGrpPath`
+- `GRP2OBJ_DUMPGRP` — Environment override for tool path (highest priority)
 
 ## License
 

@@ -1,3 +1,4 @@
 {
+  "dumpGrpPath": ".\\lib\\dumpGrp-dev.exe",
   "dumpGrp": ".\\lib\\dumpGrp-dev.exe"
 }
